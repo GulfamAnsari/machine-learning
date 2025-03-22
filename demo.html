@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Indian Stock Market Prediction</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+      }
+      input,
+      button {
+        margin: 10px;
+        padding: 10px;
+        font-size: 16px;
+      }
+      .container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      canvas {
+        width: 100vw !important;
+        height: 80vh !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Indian Stock Market Prediction</h2>
+      <input
+        type="text"
+        id="stockSymbol"
+        placeholder="Enter Stock Symbol (e.g., TCS)"
+      />
+      <button onclick="fetchStockData()">Predict</button>
+      <p id="status">Enter a stock symbol and click Predict.</p>
+      <canvas id="stockChart"></canvas>
+    </div>
+
+    <script>
+      async function fetchStockData() {
+        let v = document.getElementById("stockSymbol").value;
+        const response = await fetch('http://localhost:5000/predict/' + v);
+        const { futurePrices, data } = await response.json();
+        drawChart(data, Object.values(futurePrices));
+      }
+      
+      function drawChart(historicalData, predictions) {
+        const ctx = document.getElementById("stockChart").getContext("2d");
+
+        // Create labels for 360 historical days + 7 future days
+        const labels = [
+            ...Array.from({ length: historicalData.length }, (_, i) => `${historicalData[i].date}`),
+            ...Array.from({ length: predictions.length }, (_, i) => `Future ${i + 1}`)
+        ];
+
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "Historical Prices",
+                        data: historicalData.map((d)=>{ return d.price}),
+                        borderColor: "blue",
+                        fill: false
+                    },
+                    {
+                        label: "Predicted Prices",
+                        data: [...Array(historicalData.length).fill(null), ...predictions],
+                        borderColor: "red",
+                        borderDash: [5, 5], // Dashed line for predictions
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: false }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: "index",
+                        intersect: false
+                    }
+                }
+            }
+        });
+    }
+    </script>
+  </body>
+</html>
